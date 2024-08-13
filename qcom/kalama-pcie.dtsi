@@ -296,6 +296,7 @@
 	};
 
 	pcie1: qcom,pcie@1c08000 {
+		status = "disabled";
 		compatible = "qcom,pci-msm";
 
 		reg = <0x01c08000 0x3000>,

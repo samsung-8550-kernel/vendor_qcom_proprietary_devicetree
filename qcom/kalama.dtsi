@@ -28,18 +28,11 @@
 
 
 	chosen: chosen {
-			bootargs = "console=ttyMSM0,115200n8 loglevel=6 kpti=0 log_buf_len=256K kernel.panic_on_rcu_stall=1 service_locator.enable=1 msm_rtb.filter=0x237 rcupdate.rcu_expedited=1 rcu_nocbs=0-7 ftrace_dump_on_oops swiotlb=noforce loop.max_part=7 fw_devlink.strict=1 allow_mismatched_32bit_el0 cpufreq.default_governor=performance printk.console_no_auto_verbose=1 kasan=off sysctl.kernel.sched_pelt_multiplier=4 can.stats_timer=0 pcie_ports=compat irqaffinity=0-2 disable_dma32=on no-steal-acc cgroup.memory=nokmem,nosocket slub_debug=-";
+			bootargs = "loglevel=6 kpti=0 log_buf_len=256K kernel.panic_on_rcu_stall=1 service_locator.enable=1 msm_rtb.filter=0x237 rcupdate.rcu_expedited=1 rcu_nocbs=0-7 swiotlb=noforce loop.max_part=7 fw_devlink.strict=1 allow_mismatched_32bit_el0 cpufreq.default_governor=performance printk.console_no_auto_verbose=1 kasan=off sysctl.kernel.sched_pelt_multiplier=4 can.stats_timer=0 pcie_ports=compat irqaffinity=0-2 disable_dma32=on no-steal-acc cgroup.memory=nokmem,nosocket";
 			stdout-path = "/soc/qcom,qupv3_1_geni_se@ac0000/qcom,qup_uart@a9c000";
 	};
 
 	reserved_memory: reserved-memory { };
-
-	mem-offline {
-		compatible = "qcom,mem-offline";
-		offline-sizes = <0x2 0xc0000000 0x1 0x00000000>;
-		granule = <512>;
-		mboxes = <&qmp_aop 0>;
-	};
 
 	aliases: aliases {
 		serial0 = &qupv3_se7_2uart;
@@ -332,6 +325,10 @@
 
 
 	soc: soc { };
+
+	sched_walt: sched_walt {
+		panic_on_walt_bug = <0x4544DE33>;
+	};
 };
 
 &reserved_memory {
@@ -504,6 +501,7 @@
 	qtee_mem: qtee_region@d8300000 {
 		no-map;
 		reg = <0x0 0xd8300000 0x0 0x500000>;
+		no-memsize;
 	};
 
 	/*
@@ -549,25 +547,6 @@
 		gunyah-label = <0x12>;
 	};
 
-	oem_vm_vblk0_ring: oem_vm_vblk0_ring@f7afc000 {
-		no-map;
-		reg = <0x0 0xf7afc000 0x0 0x4000>;
-		gunyah-label = <0x13>;
-	};
-
-	oem_vm_swiotlb: oem_vm_swiotlb@f7b00000 {
-		no-map;
-		reg = <0x0 0xf7b00000 0x0 0x100000>;
-		gunyah-label = <0x14>;
-	};
-
-	oem_vm_mem: oem_vm_region@f7c00000 {
-		compatible = "shared-dma-pool";
-		reg = <0x0 0xf7c00000 0x0 0x4800000>;
-		reusable;
-		alignment = <0x0 0x400000>;
-	};
-
 	llcc_lpi_mem: llcc_lpi_region@ff800000 {
 		no-map;
 		reg = <0x0 0xff800000 0x0 0x600000>;
@@ -593,7 +572,7 @@
 		alloc-ranges = <0x0 0x00000000 0x0 0xffffffff>;
 		reusable;
 		alignment = <0x0 0x400000>;
-		size = <0x0 0x400000>;
+		size = <0x0 0xC00000>;
 	};
 
 	adsp_mem_heap: adsp_heap_region {
@@ -625,7 +604,7 @@
 		alloc-ranges = <0x0 0x00000000 0x0 0xffffffff>;
 		reusable;
 		alignment = <0x0 0x400000>;
-		size = <0x0 0x4800000>;
+		size = <0x0 0xC00000>;
 	};
 
 	non_secure_display_memory: non_secure_display_region {
@@ -2334,13 +2313,6 @@
 		shared-buffer = <&trust_ui_vm_qrtr>;
 	};
 
-	qrtr-gunyah-oemvm {
-		compatible = "qcom,qrtr-gunyah";
-		qcom,master;
-		gunyah-label = <8>;
-		peer-name = <4>;
-	};
-
 	sys-pm-vx@c320000 {
 		compatible = "qcom,sys-pm-violators", "qcom,sys-pm-kalama";
 		reg = <0xc320000 0x0400>;
@@ -2913,40 +2885,28 @@
 		memory-region = <&cpusys_vm_mem>;
 	};
 
-	qcom,guestvm_loader@f8400000 {
-		compatible = "qcom,guestvm-loader";
-		qcom,pas-id = <34>;
-		qcom,vmid = <49>;
-		qcom,firmware-name = "oemvm";
-		memory-region = <&oem_vm_mem>;
-	};
-
 	tlmm-vm-mem-access {
 		compatible = "qcom,tlmm-vm-mem-access";
 		qcom,master;
-		tlmm-vm-gpio-list = <&tlmm 86 0 &tlmm 87 0 &tlmm 133 0 &tlmm 137 0 &tlmm 44 0 &tlmm 45 0 &tlmm 46 0
-					&tlmm 47 0 &tlmm 24 0 &tlmm 25 0 &tlmm 91 0 &tlmm 56 0
-					&tlmm 57 0 &tlmm 58 0 &tlmm 59 0 &tlmm 13 0 &tlmm 48 0>;
+		tlmm-vm-gpio-list = <&tlmm 86 0 &tlmm 87 0 &tlmm 133 0 &tlmm 125 0 &tlmm 137 0 &tlmm 44 0 &tlmm 45 0 &tlmm 46 0
+					&tlmm 47 0 &tlmm 24 0 &tlmm 25 0 &tlmm 19 0 &tlmm 91 0 &tlmm 56 0
+					&tlmm 57 0 &tlmm 58 0 &tlmm 59 0 &tlmm 13 0 &tlmm 48 0 &tlmm 42 0 &tlmm 2 0
+					&tlmm 3 0 &tlmm 118 0 &tlmm 119 0 &tlmm 55 0 &tlmm 14 0>;
 	};
 
 	tlmm-vm-test {
 		compatible = "qcom,tlmm-vm-test";
 		qcom,master;
-		tlmm-vm-gpio-list = <&tlmm 86 0 &tlmm 87 0 &tlmm 133 0 &tlmm 137 0 &tlmm 44 0 &tlmm 45 0 &tlmm 46 0
-				&tlmm 47 0 &tlmm 24 0 &tlmm 25 0 &tlmm 91 0 &tlmm 56 0
-				&tlmm 57 0 &tlmm 58 0 &tlmm 59 0 &tlmm 13 0 &tlmm 48 0>;
+		tlmm-vm-gpio-list = <&tlmm 86 0 &tlmm 87 0 &tlmm 133 0 &tlmm 125 0 &tlmm 137 0 &tlmm 44 0 &tlmm 45 0 &tlmm 46 0
+				&tlmm 47 0 &tlmm 24 0 &tlmm 25 0 &tlmm 19 0 &tlmm 91 0 &tlmm 56 0
+				&tlmm 57 0 &tlmm 58 0 &tlmm 59 0 &tlmm 13 0 &tlmm 48 0 &tlmm 42 0 &tlmm 2 0
+				&tlmm 3 0 &tlmm 118 0 &tlmm 119 0 &tlmm 55 0 &tlmm 14 0>;
 	};
 
 	trust_ui_vm: qcom,trust_ui_vm@0xf78f8000 {
 		reg = <0xf78f8000 0x108000>;
 		vm_name = "trustedvm";
 		shared-buffers = <&trust_ui_vm_vblk0_ring &trust_ui_vm_vblk1_ring &trust_ui_vm_swiotlb>;
-	};
-
-	oem_vm: qcom,oem_vm@f7afc000 {
-		reg = <0xf7afc000 0x104000>;
-		vm_name = "oemvm";
-		shared-buffers = <&oem_vm_vblk0_ring &oem_vm_swiotlb>;
 	};
 
 	trust_ui_vm_virt_be0: trust_ui_vm_virt_be0@11 {
@@ -2968,28 +2928,12 @@
 		virtio-backends = <&trust_ui_vm_virt_be0 &trust_ui_vm_virt_be1>;
 	};
 
-	oem_vm_virt_be0: oem_vm_virt_be0@13 {
-		qcom,vm = <&oem_vm>;
-		qcom,label = <0x13>;
-	};
-
-	gh-secure-vm-loader@1 {
-		compatible = "qcom,gh-secure-vm-loader";
-		qcom,pas-id = <34>;
-		qcom,vmid = <49>;
-		qcom,firmware-name = "oemvm";
-		memory-region = <&oem_vm_mem>;
-		virtio-backends = <&oem_vm_virt_be0>;
-	};
-
 	gh-secure-vm-loader@2 {
 		compatible = "qcom,gh-secure-vm-loader";
 		qcom,pas-id = <35>;
 		qcom,vmid = <50>;
 		qcom,firmware-name = "cpusys_vm";
 		memory-region = <&cpusys_vm_mem>;
-		ext-region = <&chipinfo_mem>;
-		ext-label = <0x7>;
 	};
 
 	llcc_pmu: llcc-pmu@24095000 {
@@ -3359,13 +3303,6 @@
 	thermal_zones: thermal-zones {
 	};
 
-	qcom_qbt: qcom,qbt_handler {
-		compatible = "qcom,qbt-handler";
-		qcom,ipc-gpio = <&tlmm 40 0>;
-		qcom,finger-detect-gpio = <&tlmm 41 0>;
-		qcom,intr2-gpio = <&tlmm 42 0>;
-	};
-
 	spmi_bus: spmi0_bus: qcom,spmi@c42d000 {
 		compatible = "qcom,spmi-pmic-arb";
 		reg = <0xc42d000 0x4000>,
@@ -3417,7 +3354,7 @@
 		#address-cells = <2>;
 		#size-cells = <0>;
 		depends-on-supply = <&spmi1_bus>;
-		depends-on2-supply = <&smb1394_glink_debug>;
+		depends-on2-supply = <&smb1398_glink_debug>;
 
 		qcom,pmk8550-debug@0 {
 			compatible = "qcom,spmi-pmic";
@@ -3470,14 +3407,6 @@
 		qcom,pm8550vs-debug@6 {
 			compatible = "qcom,spmi-pmic";
 			reg = <0x6 SPMI_USID>;
-			#address-cells = <2>;
-			#size-cells = <0>;
-			qcom,can-sleep;
-		};
-
-		qcom,pm8550b-debug@7 {
-			compatible = "qcom,spmi-pmic";
-			reg = <0x7 SPMI_USID>;
 			#address-cells = <2>;
 			#size-cells = <0>;
 			qcom,can-sleep;
@@ -3575,38 +3504,13 @@
 			#size-cells = <0>;
 			depends-on-supply = <&spmi1_bus>;
 
-			/* Primary SPMI bus */
-			spmi@0 {
-				reg = <0>;
-				#address-cells = <2>;
-				#size-cells = <0>;
-
-				qcom,pm8550b-debug@7 {
-					compatible = "qcom,spmi-pmic";
-					reg = <0x7 SPMI_USID>;
-					qcom,can-sleep;
-				};
-			};
-
 			/* Secondary SPMI bus */
 			spmi@1 {
 				reg = <1>;
 				#address-cells = <2>;
 				#size-cells = <0>;
 
-				smb1394_glink_debug: qcom,smb1394-debug@9 {
-					compatible = "qcom,spmi-pmic";
-					reg = <0x9 SPMI_USID>;
-					qcom,can-sleep;
-				};
-
-				qcom,smb1394-debug@b {
-					compatible = "qcom,spmi-pmic";
-					reg = <0xb SPMI_USID>;
-					qcom,can-sleep;
-				};
-
-				qcom,smb1398-debug@d {
+				smb1398_glink_debug: qcom,smb1398-debug@d {
 					compatible = "qcom,spmi-pmic";
 					reg = <0xd SPMI_USID>;
 					qcom,can-sleep;
@@ -3848,4 +3752,15 @@
 	clock-names = "ahb_clk";
 	parent-supply = <&VDD_MM_MXC_VOTER_LEVEL>;
 	status = "ok";
+};
+
+/* FIXME: to prevent changes in the middle of this file,
+ * I remove 'vendor' node at here.
+ */
+&firmware {
+	android {
+		fstab {
+			/delete-node/ vendor;
+		};
+	};
 };
